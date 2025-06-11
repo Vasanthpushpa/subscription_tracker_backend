@@ -1,0 +1,90 @@
+import mongoose from "mongoose";
+import User from "./user.model";
+
+const subcriptionSchema = new mongoose.Schema({
+    name:{
+        type:String,
+        required:[true,"Subscription name is required"],
+        trim:true,
+        minLength:2,
+        maxLength:100,
+    },
+    price:{
+        type:Number,
+        required:[true,"Subscription price is required"],
+        min:[0,"Price must be greater than 0"]
+    },
+    currency:{
+        type:String,
+        enum:['INR','USD','EUR'],
+        default:'INR',
+    },
+    frequency:{
+        type:String,
+        enum:['daily','monthly','yearly']
+    },
+    category:{
+        type:String,
+        enum:['sports','entertainment','lifestyle','technology','finance','politics','other'],
+        required:true
+    },
+    paymentMethod:{
+        type:String,
+        required:[true,"payment method is required"],
+        trim:true,
+
+    },
+    status:{
+        type:String,
+        enum:['active','cancelled','expired'],
+        default:"active",
+
+    },
+    startDate:{
+        type:Date,
+        required:true,
+        validate:{
+            validator:(value)=> value <= new Date(),
+            message:'Start Date must be in the past',
+        }
+    },
+    renewalDate:{
+        type:Date,
+        validate:{
+            validator:function (value){return value > this.startDate;},
+            message:'Start Date must be in the past',
+        }
+    },
+
+    user:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'User',
+        required:true,
+        index:true,
+    }
+
+
+}, {timestamps:true});
+
+subcriptionSchema.pre('save',function(){
+    if(!this.renewalDate){
+        const renewalPeriods = {
+            daily:1,
+            weekly:7,
+            monthly:30,
+            yearl:365
+        };
+        this.renewalDate = new Date(this.startDate);
+
+        this.renewalDate.setDate(this.renewalDate.getDate() + renewalPeriods[this.frequency]);
+
+    }
+    if(this.renewalDate < new Date()){
+        this.status = 'expired';
+    }
+    next();
+});
+
+const Subcription = mongoose.model('Subscription',subcriptionSchema);
+
+export default Subcription;
