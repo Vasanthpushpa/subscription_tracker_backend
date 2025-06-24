@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import User from "./user.model";
 
-const subcriptionSchema = new mongoose.Schema({
+
+const subscriptionSchema = new mongoose.Schema({
     name:{
         type:String,
         required:[true,"Subscription name is required"],
@@ -66,7 +66,7 @@ const subcriptionSchema = new mongoose.Schema({
 
 }, {timestamps:true});
 
-subcriptionSchema.pre('save',function(){
+subscriptionSchema.pre('save',function(){
     if(!this.renewalDate){
         const renewalPeriods = {
             daily:1,
@@ -81,10 +81,11 @@ subcriptionSchema.pre('save',function(){
     }
     if(this.renewalDate < new Date()){
         this.status = 'expired';
+        next();
     }
-    next();
+
 });
 
-const Subcription = mongoose.model('Subscription',subcriptionSchema);
+const Subscription = mongoose.model('Subscription',subscriptionSchema);
 
-export default Subcription;
+export default Subscription;
